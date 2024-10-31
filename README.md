@@ -8,6 +8,7 @@
    - Run `cd ../`
 2. Run `firebase emulators:start --project demo-project`
    - Outputs
+
 ```
 $ firebase emulators:start --project demo-project
 i  emulators: Starting emulators: functions, extensions
@@ -20,6 +21,60 @@ Serving at port 8581
 ✔  functions: Loaded functions definitions from source: admin_V1.
 ⚠  Error adding Task Queue function: FirebaseError: Unable to parse JSON: SyntaxError: Unexpected token I in JSON at position 0
 i  functions[us-central1-admin_V1]: function ignored because the http emulator does not exist or is not running.
+
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌────────────┬────────────────┬──────────────────────────────────┐
+│ Emulator   │ Host:Port      │ View in Emulator UI              │
+├────────────┼────────────────┼──────────────────────────────────┤
+│ Functions  │ 127.0.0.1:5001 │ http://127.0.0.1:4000/functions  │
+├────────────┼────────────────┼──────────────────────────────────┤
+│ Extensions │ 127.0.0.1:5001 │ http://127.0.0.1:4000/extensions │
+└────────────┴────────────────┴──────────────────────────────────┘
+  Emulator Hub running at 127.0.0.1:4400
+  Other reserved ports: 4500
+┌─────────────────────────┬───────────────┬─────────────────────┐
+│ Extension Instance Name │ Extension Ref │ View in Emulator UI │
+└─────────────────────────┴───────────────┴─────────────────────┘
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+```
+
+## Notes
+
+Removing the underscore from the Task Queue function name seems to workaround the issue. `index.js` would look like
+
+```
+import * as functions from 'firebase-functions/v2';
+
+export const adminV1 = functions.tasks.onTaskDispatched(
+    {
+        secrets: ['SECRET'],
+        rateLimits: {},
+        minInstances: 1,
+    },
+    async (event) => {
+        console.debug(event);
+    },
+);
+```
+
+Running `firebase emulators:start --project demo-project` outputs:
+
+```
+$ firebase emulators:start --project demo-project
+i  emulators: Starting emulators: functions, extensions
+i  emulators: Detected demo project ID "demo-project", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+i  ui: Emulator UI logging to ui-debug.log
+i  functions: Watching "/Users/<PATH>/issues/7884/functions" for Cloud Functions...
+✔  functions: Using node@18 from host.
+Serving at port 8209
+
+✔  functions: Loaded functions definitions from source: adminV1.
+✔  tasks: Created queue with key: queue:demo-project-us-central1-adminV1
+✔  functions[us-central1-adminV1]: http function initialized (http://127.0.0.1:5001/demo-project/us-central1/adminV1).
 
 ┌─────────────────────────────────────────────────────────────┐
 │ ✔  All emulators ready! It is now safe to connect your app. │
